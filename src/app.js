@@ -4,6 +4,7 @@ const ENDPOINT_KEY = 'myapt_inventory_endpoint_v1';
 const FLAGS_KEY = 'myapt_inventory_flags_v1';
 const FLAGS_BACKUP_KEY = 'chicago_apartment_co_inventory_flags_v1';
 const FLAGS_KEYS = [FLAGS_KEY, FLAGS_BACKUP_KEY];
+const FLAGS_SYNC_ENDPOINT = 'https://ncsniper.app.n8n.cloud/webhook/chiaptco-inventory-flags';
 const DEFAULT_ENDPOINT = 'https://ncsniper.app.n8n.cloud/webhook/myapt-inventory-live';
 
 let state = loadState();
@@ -59,6 +60,25 @@ function flagKey(scope, id){ return `${scope}:${id}`; }
 function buildingFlagId(u){ return buildingKey(u); }
 function getFlag(scope, id){ return loadFlags()[flagKey(scope, id)]; }
 function flagCount(){ return Object.keys(loadFlags()).length; }
+function mergeFlags(a, b){ return { ...(a || {}), ...(b || {}) }; }
+async function flagsApi(payload){
+  const res = await fetch(FLAGS_SYNC_ENDPOINT, { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify(payload || { action:'list' }) });
+  const json = await res.json();
+  if(!json.ok) throw new Error(json.error || 'Flag sync failed');
+  return json;
+}
+async function syncFlagsFromRemote(){
+  try {
+    const local = loadFlags();
+    const remote = (await flagsApi({ action:'list' })).flags || {};
+    const merged = mergeFlags(remote, local);
+    saveFlags(merged);
+    if(Object.keys(merged).length !== Object.keys(remote).length) await flagsApi({ action:'replaceAll', flags: merged });
+    render();
+  } catch(err) { console.warn('Flag sync failed', err); }
+}
+async function syncFlagUpsert(flag){ try { await flagsApi({ action:'upsert', flag }); } catch(err){ toast('Saved locally — flag sync failed'); } }
+async function syncFlagDelete(scope, id){ try { await flagsApi({ action:'delete', scope, id }); } catch(err){ toast('Removed locally — flag sync failed'); } }
 function dateValue(s){ const d = new Date(s); return Number.isNaN(d.getTime()) ? null : d; }
 function formatDate(s){ const d = dateValue(s); return d ? d.toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'}) : 'Move date TBD'; }
 function bedLabel(v){ const n = Number(v); return n === 0 ? 'Studio' : n ? `${n} bed` : 'Beds TBD'; }
@@ -160,8 +180,10 @@ function saveFlag(e){
   if(!reason){ toast('Add a Flag Reason first'); return; }
   const flags = loadFlags();
   delete flags[flagKey(originalScope, originalId)];
-  flags[flagKey(scope, id)] = { scope, id, reason, created_at: new Date().toISOString(), updated_at: new Date().toISOString() };
+  const flag = { scope, id, reason, created_at: flags[flagKey(scope, id)]?.created_at || new Date().toISOString(), updated_at: new Date().toISOString() };
+  flags[flagKey(scope, id)] = flag;
   saveFlags(flags);
+  syncFlagUpsert(flag);
   closeDrawer('flagDrawer');
   toast(scope === 'building' ? 'Building flagged' : 'Unit flagged');
   render();
@@ -172,6 +194,7 @@ function removeCurrentFlag(){
   const flags = loadFlags();
   delete flags[flagKey(scope, id)];
   saveFlags(flags);
+  syncFlagDelete(scope, id);
   closeDrawer('flagDrawer');
   toast('Flag removed');
   render();
@@ -318,3 +341,4 @@ function bind(){
 }
 bind(); populateFilters(); applyFilters();
 if (DEFAULT_ENDPOINT) sync();
+syncFlagsFromRemote();
