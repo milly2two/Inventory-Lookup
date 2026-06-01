@@ -21,8 +21,9 @@ if (!json?.ok || !Array.isArray(units) || units.length === 0) {
 }
 console.log(JSON.stringify({
   updated_at: json.updated_at || null,
+  source_sheet: json.source_sheet || null,
   count: units.length,
-  mapped_count: units.filter(unit => unit.neighborhood_source === 'master').length,
+  neighborhood_count: units.filter(unit => unit.neighborhood).length,
 }));
 NODE
 

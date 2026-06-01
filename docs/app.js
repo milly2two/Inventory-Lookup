@@ -24,17 +24,26 @@ function normalizeUnit(raw, idx=0){
   const building = pick('building_name','property_name','property','building','name','Building Name','Property Name') || '';
   const unit = pick('unit_number','unit','unit_name','Unit','Unit Number','name') || '';
   const neighborhood = pick('neighborhood','Neighborhood','area','Area') || '';
+  const special = pick('special','Special') || '';
+  const specialAge = pick('special_age','Special Age','specialAge') || '';
   return {
-    id: String(pick('id','unit_id','Unit ID') || `${building}-${unit}-${idx}`),
+    id: String(pick('id','unit_id','ygl_unit_id','Unit ID') || `${building}-${unit}-${idx}`),
     building_key: pick('building_key','Building Key') || '',
     building_name: building || 'Unknown property',
     neighborhood,
     unit_number: unit,
     beds: pick('beds','bed','bedrooms','Bed','Beds','Bedrooms') ?? '',
     baths: pick('baths','bath','bathrooms','Bath','Baths','Bathrooms') ?? '',
-    sqft: pick('sqft','square_feet','Sqft','SQFT','Square Feet') ?? '',
-    price: pick('price','rent_price','rent','market_rent','effective_rent','Price','Rent Price','Rent','Market Rent','Effective Rent') ?? '',
+    sqft: pick('sq_ft','sqft','square_feet','Sqft','SQFT','Square Feet') ?? '',
+    price: pick('net_rent','price','effective_rent','rent_price','rent','market_rent','Net Rent','Price','Effective Rent','Rent Price','Rent','Market Rent') ?? '',
+    market_rent: pick('market_rent','Market Rent') ?? '',
+    net_rent: pick('net_rent','Net Rent') ?? '',
+    special,
+    special_age: specialAge,
     available_date: pick('available_date','availability_date','move_date','available','Available Date','Move Date','Available') ?? '',
+    last_available_date: pick('last_available_date','Last Available Date') ?? '',
+    wd: pick('wd','WD','W/D') ?? '',
+    air_type: pick('air_type','Air Type') ?? '',
     floorplan_name: pick('floorplan_name','floorplan','Floorplan','Floor Plan') ?? '',
     address: pick('address','Address') ?? '',
     url: pick('url','website','link','URL','Website','Link') ?? '',
@@ -214,9 +223,9 @@ function wireFlagButtons(){
   document.querySelectorAll('[data-flag-building]').forEach(btn=>btn.onclick=e=>{ e.stopPropagation(); openFlag('building', btn.dataset.flagBuilding); });
 }
 function unitCard(u){
-  const meta = [u.floorplan_name, u.sqft ? `${u.sqft} sqft` : '', u.unit_number ? `Unit ${u.unit_number}` : ''].filter(Boolean).join(' · ');
+  const meta = [u.floorplan_name, u.sqft ? `${u.sqft} sqft` : '', u.unit_number ? `Unit ${u.unit_number}` : '', u.special ? `Special: ${u.special}` : '', u.special_age ? `Special age: ${u.special_age}` : ''].filter(Boolean).join(' · ');
   const flagged = isFlagged('unit', u.id) || isFlagged('building', buildingFlagId(u));
-  return `<article class="card unit-card ${flagged?'flagged':''}" data-unit="${esc(u.id)}"><div><div class="card-title">${u.unit_number ? `Unit ${esc(u.unit_number)}` : esc(u.building_name)}</div><div class="card-sub">${esc(meta)}</div><div class="badges">${flagged?badge('Flagged','red'):''}${badge(bedLabel(u.beds),'blue')}${badge(bathLabel(u.baths),'gold')}${badge(formatDate(u.available_date),'green')}</div></div><div class="unit-actions"><div class="price-pill">${esc(money(u.price))}</div>${flagButton('unit', u.id)}</div></article>`;
+  return `<article class="card unit-card ${flagged?'flagged':''}" data-unit="${esc(u.id)}"><div><div class="card-title">${u.unit_number ? `Unit ${esc(u.unit_number)}` : esc(u.building_name)}</div><div class="card-sub">${esc(meta)}</div><div class="badges">${flagged?badge('Flagged','red'):''}${u.special?badge('Special','green'):''}${badge(bedLabel(u.beds),'blue')}${badge(bathLabel(u.baths),'gold')}${badge(formatDate(u.available_date),'green')}</div></div><div class="unit-actions"><div class="price-pill">${esc(money(u.price))}</div>${flagButton('unit', u.id)}</div></article>`;
 }
 function buildingKey(u){ return u.building_key || u.building_name || 'Unknown property'; }
 function minPrice(units){ const prices = units.map(u=>num(u.price)).filter(Boolean); return prices.length ? Math.min(...prices) : 0; }
@@ -294,8 +303,17 @@ function flagCard(f){
 }
 function openUnit(id){
   const u = (state.units || []).find(x=>x.id===id); if(!u) return;
+  const keyRows = [
+    ['Net rent', money(u.price)],
+    ['Market rent', u.market_rent ? money(u.market_rent) : ''],
+    ['Special', u.special],
+    ['Special age', u.special_age],
+    ['Last available date', u.last_available_date],
+    ['Washer/dryer', u.wd],
+    ['Air type', u.air_type],
+  ].filter(([,v])=>v !== '' && v != null).map(([k,v])=>`<div class="detail-row"><label>${esc(k)}</label><div>${esc(v)}</div></div>`).join('');
   const rawRows = Object.entries(u.raw || {}).filter(([,v])=>v !== '' && v != null).slice(0,40).map(([k,v])=>`<div class="detail-row"><label>${esc(k)}</label><div>${esc(v)}</div></div>`).join('');
-  $('unitDetail').innerHTML = `<div class="eyebrow">${esc(u.neighborhood || 'Inventory')}</div><h2>${esc(u.building_name)}${u.unit_number ? ` · Unit ${esc(u.unit_number)}` : ''}</h2><div class="unit-meta">${badge(money(u.price),'gold')}${badge(bedLabel(u.beds),'blue')}${badge(bathLabel(u.baths),'blue')}${badge(formatDate(u.available_date),'green')}</div><div class="actions">${flagButton('unit', u.id)}${flagButton('building', buildingFlagId(u))}</div><div class="detail-grid">${rawRows}</div>${u.url ? `<div class="actions"><a class="primary-btn" href="${esc(u.url)}" target="_blank" rel="noopener">Open listing</a></div>` : ''}`;
+  $('unitDetail').innerHTML = `<div class="eyebrow">${esc(u.neighborhood || 'Inventory')}</div><h2>${esc(u.building_name)}${u.unit_number ? ` · Unit ${esc(u.unit_number)}` : ''}</h2><div class="unit-meta">${badge(money(u.price),'gold')}${u.special?badge('Special','green'):''}${badge(bedLabel(u.beds),'blue')}${badge(bathLabel(u.baths),'blue')}${badge(formatDate(u.available_date),'green')}</div><div class="actions">${flagButton('unit', u.id)}${flagButton('building', buildingFlagId(u))}</div><div class="detail-grid">${keyRows}${rawRows}</div>${u.url ? `<div class="actions"><a class="primary-btn" href="${esc(u.url)}" target="_blank" rel="noopener">Open listing</a></div>` : ''}`;
   openDrawer('unitDrawer');
   wireFlagButtons();
 }
@@ -321,7 +339,7 @@ async function sync(){
 }
 function clearFilters(){ ['searchInput','minPriceFilter','maxPriceFilter','moveDateFilter'].forEach(id=>$(id).value=''); $('bathsFilter').value='any'; document.querySelectorAll('.multi-chip.active').forEach(btn=>btn.classList.remove('active')); applyFilters(); }
 function exportCsv(){
-  const cols = ['building_name','unit_number','neighborhood','beds','baths','sqft','price','available_date','floorplan_name','address','url'];
+  const cols = ['building_name','unit_number','neighborhood','beds','baths','sqft','price','market_rent','special','special_age','available_date','last_available_date','wd','air_type','floorplan_name','address','url'];
   const csv = [cols.join(','), ...filtered.map(u=>cols.map(c=>`"${String(u[c] ?? '').replace(/"/g,'""')}"`).join(','))].join('\n');
   const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv'})); a.download = `chicago-apartment-co-inventory-${new Date().toISOString().slice(0,10)}.csv`; a.click(); URL.revokeObjectURL(a.href);
 }
