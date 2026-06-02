@@ -58,6 +58,26 @@ function normalizeUnit(raw, idx=0){
     hold_days: pick('hold_days','HoldDays','Hold Days') ?? '',
     hold_notes: pick('hold_notes','HoldUnitNotes','Hold Unit Notes') ?? '',
     ygl_update_date: pick('ygl_update_date','YGL Update Date','Last Web Sync') ?? '',
+    utilities_included_in_rent: pick('utilities_included_in_rent','UtilitiesIncludedInRent') ?? '',
+    utilities_included_in_package: pick('utilities_included_in_package','UtilitiesIncludedInPackage') ?? '',
+    utility_notes_package_cost: pick('utility_notes_package_cost','UtilityNotesPackageCost') ?? '',
+    internet_provider: pick('internet_provider','InternetProvider') ?? '',
+    cable_provider: pick('cable_provider','CableProvider') ?? '',
+    utilities_notes: pick('utilities_notes','UtilitiesNotes') ?? '',
+    covered_parking: pick('covered_parking','CoveredParking') ?? '',
+    covered_parking_notes: pick('covered_parking_notes','CoveredParkingNotes') ?? '',
+    uncovered_parking: pick('uncovered_parking','UncoveredParking') ?? '',
+    uncovered_parking_notes: pick('uncovered_parking_notes','UncoveredParkingNotes') ?? '',
+    reserved_parking: pick('reserved_parking','ReservedParking') ?? '',
+    reserved_parking_notes: pick('reserved_parking_notes','ReservedParkingNotes') ?? '',
+    valet_parking: pick('valet_parking','ValetParking') ?? '',
+    valet_parking_notes: pick('valet_parking_notes','ValetParkingNotes') ?? '',
+    electric_charging: pick('electric_charging','ElectricCharging') ?? '',
+    off_site_parking_options: pick('off_site_parking_options','OffSiteParkingOptions') ?? '',
+    dog_run: pick('dog_run','DogRun') ?? '',
+    pet_fee: pick('pet_fee','PetFee') ?? '',
+    pet_fee_notes: pick('pet_fee_notes','PetFeeNotes') ?? '',
+    pet_rent_notes: pick('pet_rent_notes','PetRentNotes') ?? '',
     wd: pick('wd','WD','W/D') ?? '',
     air_type: pick('air_type','Air Type') ?? '',
     floorplan_name: pick('floorplan_name','floorplan','Floorplan','Floor Plan') ?? '',
@@ -355,12 +375,38 @@ function openUnit(id){
     detailRow('Hold Notes', u.hold_notes),
     detailRow('Last Web Sync', u.ygl_update_date),
   ];
+  const utilityRows = [
+    detailRow('Included in rent', u.utilities_included_in_rent),
+    detailRow('Utility Pack', u.utilities_included_in_package),
+    detailRow('Utility Notes', u.utility_notes_package_cost),
+    detailRow('Internet Provider', u.internet_provider),
+    detailRow('Cable Provider', u.cable_provider),
+    detailRow('Utility Notes', u.utilities_notes),
+  ];
+  const parkingRows = [
+    detailRow('Covered Parking', u.covered_parking),
+    detailRow('Covered Parking Notes', u.covered_parking_notes),
+    detailRow('Uncovered Parking', u.uncovered_parking),
+    detailRow('Uncovered Parking Notes', u.uncovered_parking_notes),
+    detailRow('Reserved Parking', u.reserved_parking),
+    detailRow('Reserved Parking Notes', u.reserved_parking_notes),
+    detailRow('Valet Parking', u.valet_parking),
+    detailRow('Valet Parking Notes', u.valet_parking_notes),
+    detailRow('Electric Charging', u.electric_charging),
+    detailRow('Off Site Parking', u.off_site_parking_options),
+  ];
+  const petRows = [
+    detailRow('Dog run', u.dog_run),
+    detailRow('Pet Fee', u.pet_fee),
+    detailRow('Pet Fee Notes', u.pet_fee_notes),
+    detailRow('Pet Rent', u.pet_rent_notes),
+  ];
   const sections = [
     detailSection('Unit Details', unitRows),
     detailSection('Building Details', []),
-    detailSection('Utilities', []),
-    detailSection('Parking', []),
-    detailSection('Pets', []),
+    detailSection('Utilities', utilityRows),
+    detailSection('Parking', parkingRows),
+    detailSection('Pets', petRows),
   ].join('');
   $('unitDetail').innerHTML = `<div class="eyebrow">${esc(u.neighborhood || 'Inventory')}</div><h2>${esc(u.building_name)}${u.unit_number ? ` · Unit ${esc(u.unit_number)}` : ''}</h2><div class="unit-meta"><span class="badge gold">${rentLabel(u)}</span>${u.special?badge('Special','green'):''}${badge(bedLabel(u.beds),'blue')}${badge(bathLabel(u.baths),'blue')}${badge(formatDate(u.available_date),'green')}</div><div class="actions">${flagButton('unit', u.id)}${flagButton('building', buildingFlagId(u))}</div><div class="detail-sections">${sections}</div>${u.url ? `<div class="actions"><a class="primary-btn" href="${esc(u.url)}" target="_blank" rel="noopener">Open listing</a></div>` : ''}`;
   openDrawer('unitDrawer');
