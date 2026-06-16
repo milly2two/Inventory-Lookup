@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+export PATH="$HOME/.local/node-v22.16.0-darwin-arm64/bin:$PATH"
+
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 SLOT="${1:-}"
 DEPLOY_KEY="${DEPLOY_KEY:-$HOME/.ssh/chiaptco_inventory_pages_deploy}"
