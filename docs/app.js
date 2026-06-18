@@ -6,6 +6,7 @@ const FLAGS_BACKUP_KEY = 'chicago_apartment_co_inventory_flags_v1';
 const FLAGS_KEYS = [FLAGS_KEY, FLAGS_BACKUP_KEY];
 const FLAGS_SYNC_ENDPOINT = 'https://ncsniper.app.n8n.cloud/webhook/chiaptco-inventory-flags';
 const INVENTORY_CACHE_MS = 30 * 60 * 1000;
+const INVENTORY_SCHEMA_VERSION = 'building-details-v2';
 const DEFAULT_ENDPOINT = 'inventory-live.json';
 const LEGACY_INVENTORY_ENDPOINTS = ['https://ncsniper.app.n8n.cloud/webhook/myapt-inventory-live'];
 const WD_FILTERS = [
@@ -114,7 +115,7 @@ function normalizeUnit(raw, idx=0){
 function loadState(){
   const stored = localStorage.getItem(STORE_KEY);
   if(stored){ try { return JSON.parse(stored); } catch(e){} }
-  return { units: (window.MYAPT_INVENTORY_SEED || []).map(normalizeUnit), updated_at: null, source: 'sample' };
+  return { units: (window.MYAPT_INVENTORY_SEED || []).map(normalizeUnit), updated_at: null, source: 'sample', inventory_schema_version: INVENTORY_SCHEMA_VERSION };
 }
 function save(){ localStorage.setItem(STORE_KEY, JSON.stringify(state)); }
 function saveInventoryMeta(){
@@ -469,6 +470,7 @@ function openUnit(id){
 }
 function shouldAutoSyncInventory(){
   if(state.source !== 'live' || !(state.units || []).length) return true;
+  if(state.inventory_schema_version !== INVENTORY_SCHEMA_VERSION) return true;
   const last = state.updated_at ? new Date(state.updated_at).getTime() : 0;
   return !last || (Date.now() - last) > INVENTORY_CACHE_MS;
 }
@@ -483,7 +485,7 @@ async function sync(){
     const json = await res.json();
     const rows = Array.isArray(json) ? json : (json.data?.units || json.units || json.inventory || []);
     if(!rows.length) throw new Error('No inventory rows returned');
-    state = { units: rows.map(normalizeUnit), updated_at: json.updated_at || new Date().toISOString(), update_slot: json.update_slot || '', warning: json.warning || '', source: 'live' };
+    state = { units: rows.map(normalizeUnit), updated_at: json.updated_at || new Date().toISOString(), update_slot: json.update_slot || '', warning: json.warning || '', source: 'live', inventory_schema_version: INVENTORY_SCHEMA_VERSION };
     saveInventoryMeta(); populateFilters(); applyFilters(); toast(`Loaded ${state.units.length.toLocaleString()} units`);
   }catch(err){ toast('Sync failed: ' + err.message); }
   finally{ if(syncBtn){ syncBtn.disabled = false; syncBtn.textContent = 'Reload inventory'; } }
@@ -514,7 +516,7 @@ function bind(){
   if($('syncBtn')) $('syncBtn').onclick = sync; $('clearFiltersBtn').onclick = clearFilters; $('exportCsvBtn').onclick = exportCsv; $('exportFlagsBtn').onclick = exportFlagsCsv;
   $('settingsBtn').onclick = ()=>{ $('endpointInput').value = localStorage.getItem(ENDPOINT_KEY) || DEFAULT_ENDPOINT; openDrawer('settingsDrawer'); };
   $('saveEndpointBtn').onclick = ()=>{ localStorage.setItem(ENDPOINT_KEY, $('endpointInput').value.trim()); closeDrawer('settingsDrawer'); toast('Endpoint saved'); };
-  $('loadSampleBtn').onclick = ()=>{ state={units:(window.MYAPT_INVENTORY_SEED||[]).map(normalizeUnit),updated_at:null,warning:'',source:'sample'}; save(); populateFilters(); applyFilters(); closeDrawer('settingsDrawer'); };
+  $('loadSampleBtn').onclick = ()=>{ state={units:(window.MYAPT_INVENTORY_SEED||[]).map(normalizeUnit),updated_at:null,warning:'',source:'sample',inventory_schema_version:INVENTORY_SCHEMA_VERSION}; save(); populateFilters(); applyFilters(); closeDrawer('settingsDrawer'); };
   document.querySelectorAll('[data-close]').forEach(btn=>btn.onclick=()=>closeDrawer(btn.dataset.close));
   document.querySelectorAll('.drawer').forEach(d=>d.addEventListener('click',e=>{ if(e.target===d) closeDrawer(d.id); }));
 }
