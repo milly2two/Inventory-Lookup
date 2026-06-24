@@ -81,6 +81,7 @@ function normalizeUnit(raw, idx=0){
     outdoor_space: pick('outdoor_space','OutdoorSpace') ?? '',
     bike_storage: pick('bike_storage','BikeStorage') ?? '',
     doorman_status: pick('doorman_status','DoormanStatus','Security') ?? '',
+    dnp: pick('dnp','DNP') ?? '',
     laundry_status: pick('laundry_status','Laundry') ?? '',
     laundry_notes: pick('laundry_notes','LaundryNotes') ?? '',
     central_air: pick('central_air','CentralAir') ?? '',
@@ -159,6 +160,7 @@ async function syncFlagDelete(scope, id){ try { await flagsApi({ action:'delete'
 function dateValue(s){ const d = new Date(s); return Number.isNaN(d.getTime()) ? null : d; }
 function formatDate(s){ const d = dateValue(s); return d ? d.toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'}) : 'Move date TBD'; }
 function laundryFilterValue(u){ return u.laundry_status || u.wd || ''; }
+function isDnp(u){ return String(u.dnp || '').toUpperCase().includes('DNP'); }
 function bedLabel(v){ const n = Number(v); return n === 0 ? 'Studio' : n ? `${n} bed` : 'Beds TBD'; }
 function bathLabel(v){ const n = Number(v); return n ? `${Number.isInteger(n) ? n : n.toFixed(1)} bath` : 'Baths TBD'; }
 function badge(label, cls=''){ return `<span class="badge ${cls}">${esc(label)}</span>`; }
@@ -176,6 +178,7 @@ function selectedChips(id){
 function chipLabel(type, v){
   if(type==='beds') return Number(v) === 0 ? 'Studio' : `${v} bed`;
   if(type==='wd') return WD_FILTERS.find(([, value])=>value===v)?.[0] || v;
+  if(type==='dnp') return 'Hide DNP';
   return v;
 }
 function buildMultiChips(id, values, type){
@@ -191,6 +194,7 @@ function populateFilters(){
   $('bathsFilter').innerHTML = '<option value="any">Any baths</option>' + baths.map(v=>`<option value="${esc(v)}">${esc(v)} bath</option>`).join('');
   buildMultiChips('neighborhoodFilter', hood, 'neighborhood');
   buildMultiChips('wdFilter', WD_FILTERS.map(([, value])=>value), 'wd');
+  buildMultiChips('dnpFilter', ['hide'], 'dnp');
 }
 
 function applyFilters(){
@@ -199,6 +203,7 @@ function applyFilters(){
   const baths = $('bathsFilter').value;
   const hood = selectedChips('neighborhoodFilter');
   const wd = selectedChips('wdFilter');
+  const hideDnp = selectedChips('dnpFilter').includes('hide');
   const min = num($('minPriceFilter').value);
   const max = num($('maxPriceFilter').value);
   const moveBy = $('moveDateFilter').value ? new Date($('moveDateFilter').value + 'T23:59:59') : null;
@@ -207,6 +212,7 @@ function applyFilters(){
     if(baths !== 'any' && String(u.baths) !== baths) return false;
     if(hood.length && !hood.includes(u.neighborhood)) return false;
     if(wd.length && !wd.includes(laundryFilterValue(u))) return false;
+    if(hideDnp && isDnp(u)) return false;
     const price = num(u.price);
     if(min && (!price || price < min)) return false;
     if(max && (!price || price > max)) return false;
