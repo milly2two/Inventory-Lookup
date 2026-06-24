@@ -10,9 +10,9 @@ const INVENTORY_SCHEMA_VERSION = 'building-details-v2';
 const DEFAULT_ENDPOINT = 'https://raw.githubusercontent.com/milly2two/Inventory-Lookup/main/docs/inventory-live.json';
 const LEGACY_INVENTORY_ENDPOINTS = ['https://ncsniper.app.n8n.cloud/webhook/myapt-inventory-live'];
 const WD_FILTERS = [
-  ['In Unit', 'In-unit W/D- all units'],
+  ['In Unit', 'In-unit'],
   ['Some', 'Some'],
-  ['On Site', 'On-site laundry'],
+  ['On Site', 'Laundry-Room'],
 ];
 
 let state = loadState();
@@ -158,6 +158,7 @@ async function syncFlagUpsert(flag){ try { await flagsApi({ action:'upsert', fla
 async function syncFlagDelete(scope, id){ try { await flagsApi({ action:'delete', scope, id }); } catch(err){ toast('Removed locally — flag sync failed'); } }
 function dateValue(s){ const d = new Date(s); return Number.isNaN(d.getTime()) ? null : d; }
 function formatDate(s){ const d = dateValue(s); return d ? d.toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'}) : 'Move date TBD'; }
+function laundryFilterValue(u){ return u.laundry_status || u.wd || ''; }
 function bedLabel(v){ const n = Number(v); return n === 0 ? 'Studio' : n ? `${n} bed` : 'Beds TBD'; }
 function bathLabel(v){ const n = Number(v); return n ? `${Number.isInteger(n) ? n : n.toFixed(1)} bath` : 'Baths TBD'; }
 function badge(label, cls=''){ return `<span class="badge ${cls}">${esc(label)}</span>`; }
@@ -205,7 +206,7 @@ function applyFilters(){
     if(beds.length && !beds.includes(String(u.beds))) return false;
     if(baths !== 'any' && String(u.baths) !== baths) return false;
     if(hood.length && !hood.includes(u.neighborhood)) return false;
-    if(wd.length && !wd.includes(u.wd)) return false;
+    if(wd.length && !wd.includes(laundryFilterValue(u))) return false;
     const price = num(u.price);
     if(min && (!price || price < min)) return false;
     if(max && (!price || price > max)) return false;
