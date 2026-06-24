@@ -481,7 +481,8 @@ async function sync(){
   const syncBtn = $('syncBtn');
   if(syncBtn){ syncBtn.disabled = true; syncBtn.textContent = 'Loading…'; }
   try{
-    const res = await fetch(endpoint, { cache:'no-store' });
+    const requestEndpoint = endpoint === DEFAULT_ENDPOINT ? `${endpoint}?v=${Date.now()}` : endpoint;
+    const res = await fetch(requestEndpoint, { cache:'no-store' });
     const json = await res.json();
     const rows = Array.isArray(json) ? json : (json.data?.units || json.units || json.inventory || []);
     if(!rows.length) throw new Error('No inventory rows returned');
