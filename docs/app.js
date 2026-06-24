@@ -7,7 +7,7 @@ const FLAGS_KEYS = [FLAGS_KEY, FLAGS_BACKUP_KEY];
 const FLAGS_SYNC_ENDPOINT = 'https://ncsniper.app.n8n.cloud/webhook/chiaptco-inventory-flags';
 const INVENTORY_CACHE_MS = 30 * 60 * 1000;
 const INVENTORY_SCHEMA_VERSION = 'building-details-v2';
-const DEFAULT_ENDPOINT = 'inventory-live.json';
+const DEFAULT_ENDPOINT = 'https://raw.githubusercontent.com/milly2two/Inventory-Lookup/main/docs/inventory-live.json';
 const LEGACY_INVENTORY_ENDPOINTS = ['https://ncsniper.app.n8n.cloud/webhook/myapt-inventory-live'];
 const WD_FILTERS = [
   ['In Unit', 'In-unit W/D- all units'],
@@ -476,7 +476,7 @@ function shouldAutoSyncInventory(){
 }
 async function sync(){
   const storedEndpoint = (localStorage.getItem(ENDPOINT_KEY) || '').trim();
-  const endpoint = storedEndpoint && !LEGACY_INVENTORY_ENDPOINTS.includes(storedEndpoint) ? storedEndpoint : DEFAULT_ENDPOINT;
+  const endpoint = storedEndpoint && storedEndpoint !== 'inventory-live.json' && !LEGACY_INVENTORY_ENDPOINTS.includes(storedEndpoint) ? storedEndpoint : DEFAULT_ENDPOINT;
   if(!endpoint){ openDrawer('settingsDrawer'); toast('Add the inventory endpoint first'); return; }
   const syncBtn = $('syncBtn');
   if(syncBtn){ syncBtn.disabled = true; syncBtn.textContent = 'Loading…'; }
