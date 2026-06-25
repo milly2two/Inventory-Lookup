@@ -34,6 +34,14 @@ const units = json?.data?.units || json?.units || json?.inventory || [];
 if (!json?.ok || !Array.isArray(units) || units.length === 0) {
   throw new Error('Inventory snapshot did not return ok:true with units');
 }
+const visibleUnits = units.filter(unit => String(unit.working_with_brokers || '').trim().toLowerCase() !== 'no');
+if (json?.data?.units) {
+  json.data.units = visibleUnits;
+} else if (json?.units) {
+  json.units = visibleUnits;
+} else {
+  json.inventory = visibleUnits;
+}
 if (!updateSlot) {
   const d = new Date(json.updated_at || Date.now());
   const hour = Number(new Intl.DateTimeFormat('en-US', { timeZone: 'America/Chicago', hour: 'numeric', hour12: false }).format(d));
@@ -44,8 +52,9 @@ console.log(JSON.stringify({
   updated_at: json.updated_at || null,
   update_slot: json.update_slot || null,
   source_sheet: json.source_sheet || null,
-  count: units.length,
-  neighborhood_count: units.filter(unit => unit.neighborhood).length,
+  count: visibleUnits.length,
+  removed_working_with_brokers_no: units.length - visibleUnits.length,
+  neighborhood_count: visibleUnits.filter(unit => unit.neighborhood).length,
 }));
 fs.writeFileSync(file, JSON.stringify(json));
 NODE
