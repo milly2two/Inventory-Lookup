@@ -161,6 +161,7 @@ function dateValue(s){ const d = new Date(s); return Number.isNaN(d.getTime()) ?
 function formatDate(s){ const d = dateValue(s); return d ? d.toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'}) : 'Move date TBD'; }
 function laundryFilterValue(u){ return u.laundry_status || u.wd || ''; }
 function isDnp(u){ return String(u.dnp || '').toUpperCase().includes('DNP'); }
+function worksWithBrokers(u){ return String(u.working_with_brokers || '').trim().toLowerCase() !== 'no'; }
 function bedLabel(v){ const n = Number(v); return n === 0 ? 'Studio' : n ? `${n} bed` : 'Beds TBD'; }
 function bathLabel(v){ const n = Number(v); return n ? `${Number.isInteger(n) ? n : n.toFixed(1)} bath` : 'Baths TBD'; }
 function badge(label, cls=''){ return `<span class="badge ${cls}">${esc(label)}</span>`; }
@@ -208,6 +209,7 @@ function applyFilters(){
   const max = num($('maxPriceFilter').value);
   const moveBy = $('moveDateFilter').value ? new Date($('moveDateFilter').value + 'T23:59:59') : null;
   filtered = (state.units || []).filter(u => {
+    if(!worksWithBrokers(u)) return false;
     if(beds.length && !beds.includes(String(u.beds))) return false;
     if(baths !== 'any' && String(u.baths) !== baths) return false;
     if(hood.length && !hood.includes(u.neighborhood)) return false;
