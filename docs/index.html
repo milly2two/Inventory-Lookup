@@ -126,8 +126,22 @@
     </div>
   </div>
 
+  <div class="quick-notes" id="quickNotes">
+    <button class="quick-notes-toggle" id="quickNotesToggle" type="button" aria-expanded="false" aria-controls="quickNotesPanel">Notes</button>
+    <section class="quick-notes-panel" id="quickNotesPanel" aria-label="Temporary client notes">
+      <div class="quick-notes-head">
+        <h2>Notes</h2>
+        <button class="quick-notes-close" id="quickNotesClose" type="button" aria-label="Minimize notes">×</button>
+      </div>
+      <textarea id="quickNotesText" placeholder="Type call notes here, then copy to CRM..."></textarea>
+      <div class="quick-notes-actions">
+        <button class="small-btn" id="quickNotesClear" type="button">Clear</button>
+      </div>
+    </section>
+  </div>
+
   <div class="toast" id="toast"></div>
   <script src="seed-data.js?v=building-details-cache-refresh"></script>
-  <script src="app.js?v=broker-filter-20260624"></script>
+  <script src="app.js?v=quick-notes-20260702"></script>
 </body>
 </html>
